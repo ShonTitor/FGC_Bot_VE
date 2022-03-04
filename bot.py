@@ -96,5 +96,5 @@ while True :
         printl(traceback.format_exc())
 
     printl("sleeping")
-    time.sleep(5)
+    time.sleep(60)
 
