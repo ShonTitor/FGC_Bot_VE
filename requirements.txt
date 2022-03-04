@@ -3,4 +3,5 @@ charset-normalizer==2.0.12
 idna==3.3
 Pillow==9.0.1
 requests==2.27.1
+twitter==1.19.3
 urllib3==1.26.8
