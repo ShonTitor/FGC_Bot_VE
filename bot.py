@@ -79,11 +79,11 @@ while True :
 
                 result_text = format_data(data)
                 try:
-                    params = {"status": result_text}
                     if img:
-                        params["media[]"] = img
-                        params["_base64"] = True
-                    twitter_api.statuses.update_with_media(**params)
+                        params = {"status": result_text, "media[]": img, "_base64": True}
+                        twitter_api.statuses.update_with_media(**params)
+                    else:
+                        twitter_api.statuses.update_with_media(result_text)
                 except Exception:
                     printl(traceback.format_exc())
                         
