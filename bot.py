@@ -26,7 +26,7 @@ def printl(s):
     now = datetime.now()
     s = now.strftime("%d/%m/%Y %H:%M:%S") + " " + s
     print(s)
-    with open("log.txt", "a") as f:
+    with open(os.path.join(path, "log.txt"), "a") as f:
         f.write(s + "\n")
 
 while True :
