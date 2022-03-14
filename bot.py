@@ -6,6 +6,8 @@ from apis import *
 from datetime import datetime
 import twitter
 
+path = os.path.realpath(__file__)
+path = os.path.abspath(os.path.join(path, os.pardir))
 with open(os.path.join(path, "config.json"), "r") as f:
     config = json.loads(f.read())
     db_file = config["db_file"]
@@ -17,7 +19,8 @@ twitter_api = twitter.Twitter(auth=twitter.OAuth(
                                 config["twitter_consumer_key"],
                                 config["twitter_consumer_secret"]))
 
-conn = create_connection(db_file)
+db_path = os.path.join(path, db_file)
+conn = create_connection(db_path)
 
 def printl(s):
     now = datetime.now()

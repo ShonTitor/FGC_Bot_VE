@@ -362,7 +362,8 @@ def to_top8er_dict(orig_data):
     return data
 
 def get_top8er(data):
-    files = {'background': open(f'bg_{data["game"]}.png','rb')}
+    bg_path = os.path.join(path, f'bg_{data["game"]}.png')
+    files = {'background': open(bg_path,'rb')}
     data = to_top8er_dict(data)
     #print(json.dumps(data))
     response = requests.post(top8er_api_url,
@@ -375,12 +376,13 @@ if __name__ ==  "__main__" :
     #slug = "tournament/frosty-faustings-xii-2020/event/under-night-in-birth-exe-late-st"
     #slug = "tournament/genesis-7-1/event/ultimate-singles"
     #slug = "tournament/super-smash-con-fall-fest/event/brawl-1v1-singles"
-    slug = "tournament/can-tv-melee-venezuela-5/event/melee-singles"
+    #slug = "tournament/can-tv-melee-venezuela-5/event/melee-singles"
     #slug = "tournament/can-tv-8/event/melee-singles"
     #slug = "tournament/can-tv-melee-venezuela-7/event/melee-singles"
     #slug = "tournament/can-tv-melee-venezuela-5/event/melee-singles"
     #slug = "tournament/volver-al-melee/event/melee-singles"
     #slug = "tournament/smash-pro-league-8/event/smash-64-singles"
+    slug = "tournament/can-tv-10/event/melee-singles"
 
     events = scan_sgg()
     #slug = events[0]
