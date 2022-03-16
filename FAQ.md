@@ -1,6 +1,6 @@
 # Preguntas Frecuentes SmashResultsVE
 
-Esta guía tiene como objetivo aclarar ciertos puntos importanetes sobre el funcionamiento del bot de twitter [SmashResultsVE](https://twitter.com/SmashResultsVe).
+Esta guía tiene como objetivo aclarar ciertos puntos importantes sobre el funcionamiento del bot de twitter [SmashResultsVE](https://twitter.com/SmashResultsVe).
 
 ## ¿Qué juegos soporta SmashResultsVE?
 
