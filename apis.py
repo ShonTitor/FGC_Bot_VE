@@ -77,7 +77,7 @@ def challonge_data(slug) :
         datos = datos["tournament"]
     else :
         return False
-    
+
     players = [p["participant"] for p in datos["participants"]]
     if all(not p["final_rank"] is None for p in players) :
         players = sorted(players, key=lambda p: p["final_rank"])
@@ -90,7 +90,7 @@ def challonge_data(slug) :
                for p in players]
 
     url = datos['full_challonge_url']
-    
+
     datos = {
         "players" : players,
         "name" : datos["name"],
@@ -114,9 +114,9 @@ def scan_sgg(page=1, videogameIds=videogameIds, countryCode=countryCode) :
         }
       }) {
         nodes {
-          events { 
-            slug 
-            videogame { id } 
+          events {
+            slug
+            videogame { id }
           }
         }
       }
@@ -160,7 +160,9 @@ def check_sgg(slug) :
     #print(event)
     if event is None :
       return None
-    if event["numEntrants"] > 0 and event["state"] == "COMPLETED" :
+    if event["numEntrants"] \
+       and event["numEntrants"] > 0 \
+       and event["state"] == "COMPLETED" :
             return True
     else :
         return False
@@ -203,7 +205,7 @@ def sgg_query(slug) :
               }
             }
           }
-          
+
             sets(page: 1, perPage: 11, sortType: RECENT) {
                 nodes {
                     games {
@@ -224,7 +226,7 @@ def sgg_query(slug) :
 
 def sgg_char_freq(sets):
     freq = {}
-    
+
     for node in sets['nodes'] :
         if node["games"] is None : continue
         for game in node["games"] :
@@ -271,7 +273,7 @@ def sgg_data(slug) :
         country = event["tournament"]["countryCode"]
     else : country = None
     name = event["tournament"]["name"] + " - " + event["name"]
-    
+
     if event["tournament"]["shortSlug"] :
         link = "https://smash.gg/"+event["tournament"]["shortSlug"]
     else :
@@ -306,14 +308,14 @@ def format_data(data) :
     players = [f"{p['position']}. {name(p)}"
                 for p in data["players"]]
     players = "\n".join(list(players))
-    
+
     text = "Top {0} {1}\n{2} participantes\n\n".format(
                                     len(data["players"]),
                                     data["name"],
                                     data["participants_number"])
     text += players
     text += "\n\nBracket:\n" + data["url"]
-    
+
     return text
 
 def is_sgg(slug) :
@@ -397,7 +399,7 @@ if __name__ ==  "__main__" :
         buffer = io.BytesIO(base64_img)
         img = Image.open(buffer)
         img.show()
-        
+
     #slug = "ACTIVBBCF"
     #print(check_challonge(slug))
     #d = challonge_data(slug)
