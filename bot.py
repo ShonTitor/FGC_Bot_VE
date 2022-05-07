@@ -63,7 +63,7 @@ while True :
                 if checked :
                     data = event_data(slug)
 
-                    if data["game"] in ["ssbu", "melee"] \
+                    if "game" in data and data["game"] in ["ssbu", "melee"] \
                        and len(data["players"]) >= 8 \
                        and not all(p["char"][0] == "Random" for p in data["players"]\
                            ):
