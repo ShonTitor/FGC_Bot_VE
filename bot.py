@@ -79,7 +79,7 @@ while True :
                             #img.save("result.png")
                             img = top8er["base64_img"]
                     else:
-                        printl(f"Skipping top 8 graphic")
+                        printl("Skipping top 8 graphic")
                         img = None
 
                     result_text = format_data(data)
