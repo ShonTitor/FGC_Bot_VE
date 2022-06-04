@@ -206,7 +206,7 @@ def sgg_query(slug) :
             }
           }
 
-            sets(page: 1, perPage: 11, sortType: RECENT) {
+            sets(page: 1, perPage: 11, sortType: MAGIC) {
                 nodes {
                     games {
                         selections {
@@ -384,7 +384,9 @@ if __name__ ==  "__main__" :
     #slug = "tournament/can-tv-melee-venezuela-5/event/melee-singles"
     #slug = "tournament/volver-al-melee/event/melee-singles"
     #slug = "tournament/smash-pro-league-8/event/smash-64-singles"
-    slug = "tournament/can-tv-10/event/melee-singles"
+    #slug = "tournament/can-tv-10/event/melee-singles"
+    slug = "tournament/season-finale-1/event/singles"
+    #slug = "tournament/smash-pro-league-14/event/ultimate-singles"
 
     events = scan_sgg()
     #slug = events[0]
@@ -399,6 +401,7 @@ if __name__ ==  "__main__" :
         buffer = io.BytesIO(base64_img)
         img = Image.open(buffer)
         img.show()
+        input()
 
     #slug = "ACTIVBBCF"
     #print(check_challonge(slug))
