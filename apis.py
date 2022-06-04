@@ -288,7 +288,7 @@ def sgg_data(slug) :
     if event["tournament"]["city"] :
         ciudad = event["tournament"]["city"]
         btext.append(ciudad)
-    btext.append(str(event["numEntrants"])+" Participants")
+    btext.append(str(event["numEntrants"])+" Participantes")
     btext = " - ".join(btext)
 
     datos = {
