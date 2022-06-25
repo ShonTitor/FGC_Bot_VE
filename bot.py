@@ -63,6 +63,10 @@ while True :
                 if checked :
                     data = event_data(slug)
 
+                    if data["players"][0]["position"] == 2:
+                        printl(f"Skipping {slug} because it has 2 second places")
+                        continue
+
                     if "game" in data and data["game"] in ["ssbu", "melee"] \
                        and len(data["players"]) >= 8 \
                        and not all(p["char"][0] == "Random" for p in data["players"]\
