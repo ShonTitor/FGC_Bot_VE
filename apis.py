@@ -3,6 +3,7 @@ import json
 import os
 import base64
 import io
+import time
 from datetime import datetime
 
 from PIL import Image
@@ -123,7 +124,7 @@ def scan_sgg(page=1, videogameIds=videogameIds, countryCode=countryCode) :
     }
     '''
     variables = {
-  	"page" : page,
+    "page" : page,
         "perPage": 20,
         "videogameId": videogameIds,
         "countryCode": countryCode
@@ -170,64 +171,87 @@ def check_sgg(slug) :
 def sgg_query(slug) :
     query = '''
     query StandingsQuery($slug: String) {
-        event(slug: $slug) {
+      event(slug: $slug) {
+        id
+        name
+        numEntrants
+        state
+        startAt
+        videogame {
           id
+        }
+        tournament {
           name
-          numEntrants
-          state
-          startAt
-          videogame {id}
-          tournament {
-                        name
-                        countryCode
-                        slug
-                        shortSlug
-                        city
-                        images {type url}
-                      }
-
-          standings(query: {
-            page: 1
-            perPage: 8
-            sortBy: "standing"
-          }){
-            nodes{
-              placement
-              entrant{
-                name
-                participants {
-                  user {
-                    authorizations(types:TWITTER) {
-                      externalUsername
-                    }
+          countryCode
+          slug
+          shortSlug
+          city
+          images {
+            type
+            url
+          }
+        }
+        standings(query: {page: 1, perPage: 8, sortBy: "standing"}) {
+          nodes {
+            placement
+            entrant {
+              name
+              participants {
+                user {
+                  authorizations(types: TWITTER) {
+                    externalUsername
                   }
                 }
               }
             }
           }
-
-            sets(page: 1, perPage: 11, sortType: MAGIC) {
-                nodes {
-                    games {
-                        selections {
-                            entrant {name}
-                            selectionValue
-                        }
-                    }
-                }
-            }
-
         }
-    	}
+      }
+    }
     '''
     payload = {"query" : query, "variables" : {"slug" : slug}}
     response = requests.post(url=url, headers=headers, json=payload)
     return json.loads(response.content)
 
+def sgg_sets_query(slug) :
+    query = '''
+    query SetsQuery($slug: String, $page: Int) {
+      event(slug: $slug) {
+        sets(page: $page, perPage: 50, sortType: MAGIC) {
+          nodes {
+            games {
+              selections {
+                entrant {
+                  name
+                }
+                selectionValue
+              }
+            }
+          }
+        }
+      }
+    }
+    '''
+    sets = []
+    page = 1
+    while True:
+        prev = len(sets)
+        payload = {"query" : query, "variables" : {"slug" : slug, "page": page}}
+        response = requests.post(url=url, headers=headers, json=payload)
+        data = json.loads(response.content)
+        new_sets = data["data"]["event"]["sets"]["nodes"]
+        if len(new_sets) == 0:
+            break
+        sets += new_sets
+        time.sleep(0.1)
+        page += 1
+    
+    return sets
+
 def sgg_char_freq(sets):
     freq = {}
 
-    for node in sets['nodes'] :
+    for node in sets:
         if node["games"] is None : continue
         for game in node["games"] :
             if game["selections"] :
@@ -250,7 +274,9 @@ def sgg_data(slug) :
     data = sgg_query(slug)
     #print(data)
     data = data["data"]
-    char_freq = sgg_char_freq(data["event"]["sets"])
+    sets = sgg_sets_query(slug)
+    #char_freq = sgg_char_freq(data["event"]["sets"])
+    char_freq = sgg_char_freq(sets)
     #print(char_freq)
 
     players = []
@@ -304,7 +330,15 @@ def sgg_data(slug) :
     return datos
 
 def format_data(data) :
-    name = lambda x : x["twitter"] if x["twitter"] is not None else x["tag"]
+    #name = lambda x : x["twitter"] if x["twitter"] is not None else x["tag"]
+    def name(x):
+        tag = x["tag"]
+        if len(tag) > 18 and " | " in tag:
+            tag = tag.split(" | ", 1)[1]
+        if len(tag) > 18:
+            tag = tag[:15] + "..."
+        return tag
+    
     players = [f"{p['position']}. {name(p)}"
                 for p in data["players"]]
     players = "\n".join(list(players))
@@ -367,33 +401,62 @@ def get_top8er(data):
     bg_path = os.path.join(path, f'bg_{data["game"]}.png')
     files = {'background': open(bg_path,'rb')}
     data = to_top8er_dict(data)
-    #print(json.dumps(data))
-    response = requests.post(top8er_api_url,
+    response = requests.post(f"{top8er_api_url}/salu2?format=json",
                              data=data,
                              files= files)
     r = json.loads(response.content)
     return r
 
+def get_top8er_new(data):
+    players = []
+    for player in data["players"]:
+        p = {
+            "name": player["tag"],
+            "social": player["twitter"],
+            "character": [[player["char"][0], 0], None, None],
+            "flag": [None, None]
+        }
+        players.append(p)
+    options = {
+        "toptext": data["toptext"],
+        "url": data["url"],
+        "bottomtext": data["bottomtext"],
+        "layoutcolor": "#df2c3b",
+        "fontcolor": "#ffffff",
+        "fontcolor2": "#ffffff",
+        "fontshadowcolor": "#000000",
+        "fontshadowcolor2": "#000000",
+        "mainfont": None,
+        "blacksquares": True,
+        "charshadow": True,
+        "textshadow": True,
+        "darkenbg": False,
+        "layout": True
+    }
+
+    request_data = {
+        "players": players,
+        "options": options
+    }
+
+    response = requests.post(f"{top8er_api_url}/generate/top8er-2023/{data['game']}/",
+                             json=request_data)
+    r = json.loads(response.content)
+    return r
+
 if __name__ ==  "__main__" :
-    #slug = "tournament/frosty-faustings-xii-2020/event/under-night-in-birth-exe-late-st"
-    #slug = "tournament/genesis-7-1/event/ultimate-singles"
-    #slug = "tournament/super-smash-con-fall-fest/event/brawl-1v1-singles"
-    #slug = "tournament/can-tv-melee-venezuela-5/event/melee-singles"
-    #slug = "tournament/can-tv-8/event/melee-singles"
-    #slug = "tournament/can-tv-melee-venezuela-7/event/melee-singles"
-    #slug = "tournament/can-tv-melee-venezuela-5/event/melee-singles"
-    #slug = "tournament/volver-al-melee/event/melee-singles"
-    #slug = "tournament/smash-pro-league-8/event/smash-64-singles"
-    #slug = "tournament/can-tv-10/event/melee-singles"
-    slug = "tournament/season-finale-1/event/singles"
-    #slug = "tournament/smash-pro-league-14/event/ultimate-singles"
+    slug = "tournament/volver-al-melee-online-2/event/melee-singles"
+    slug = "tournament/slippi-42/event/melee-singles"
+    slug = "tournament/stone-ocean-7/event/melee-singles"
+    #slug = "tournament/stone-ocean-7/event/ultimate-singles"
 
     events = scan_sgg()
     #slug = events[0]
     print(check_sgg(slug))
     d = sgg_data(slug)
     print(format_data(d))
-    top8er = get_top8er(d)
+    #top8er = get_top8er(d)
+    top8er = get_top8er_new(d)
     if "error" in top8er:
         print(top8er["error"])
     else:
@@ -402,9 +465,3 @@ if __name__ ==  "__main__" :
         img = Image.open(buffer)
         img.show()
         input()
-
-    #slug = "ACTIVBBCF"
-    #print(check_challonge(slug))
-    #d = challonge_data(slug)
-    #print(format_data(d))
-

@@ -1,4 +1,3 @@
-import re
 import time
 import traceback
 from database import *
@@ -10,7 +9,7 @@ path = os.path.realpath(__file__)
 path = os.path.abspath(os.path.join(path, os.pardir))
 with open(os.path.join(path, "config.json"), "r") as f:
     config = json.loads(f.read())
-    db_file = config["db_file"]
+db_file = config["db_file"]
 
 # Cosas de twitter
 twitter_api = twitter.Twitter(auth=twitter.OAuth(
@@ -26,8 +25,8 @@ def printl(s):
     now = datetime.now()
     s = now.strftime("%d/%m/%Y %H:%M:%S") + " " + s
     print(s)
-    with open(os.path.join(path, "log.txt"), "a") as f:
-        f.write(s + "\n")
+    #with open(os.path.join(path, "log.txt"), "a") as f:
+    #    f.write(s + "\n")
 
 while True :
     try:
@@ -59,6 +58,7 @@ while True :
                 checked = check_event(slug)
                 if checked is None :
                     printl("Couldn't find event "+slug)
+                    complete_event(conn, slug)
                     continue
                 if checked :
                     data = event_data(slug)
@@ -72,16 +72,13 @@ while True :
                        and not all(p["char"][0] == "Random" for p in data["players"]\
                            ):
 
-                        top8er = get_top8er(data)
-                        if "error" in top8er:
-                            printl(f"top8er API error: {top8er['error']}")
-                            img = None
-                        else:
-                            #base64_img = base64.b64decode(top8er["base64_img"])
-                            #buffer = io.BytesIO(base64_img)
-                            #img = Image.open(buffer)
-                            #img.save("result.png")
+                        try:
+                            top8er = get_top8er_new(data)
                             img = top8er["base64_img"]
+                        except Exception:
+                            printl("Top8er API error", traceback.format_exc())
+                            img = None
+                            
                     else:
                         printl("Skipping top 8 graphic")
                         img = None
@@ -93,10 +90,9 @@ while True :
                             twitter_api.statuses.update_with_media(**params)
                         else:
                             twitter_api.statuses.update(status=result_text)
+                        complete_event(conn, slug)
                     except Exception:
                         printl(traceback.format_exc())
-
-                    complete_event(conn, slug)
 
                     printl(result_text + "\n\n\n")
                     time.sleep(1)
