@@ -76,7 +76,7 @@ while True :
                             top8er = get_top8er_new(data)
                             img = top8er["base64_img"]
                         except Exception:
-                            printl("Top8er API error", traceback.format_exc())
+                            printl(traceback.format_exc())
                             img = None
                             
                     else:
