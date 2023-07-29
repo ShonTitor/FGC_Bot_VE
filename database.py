@@ -34,7 +34,7 @@ def drop_tables(conn) :
                 c.execute(tablita)
             except Error as e:
                 print(e)
-        create_table(conn)
+        create_tables(conn)
     else:
         print("Error! cannot create the database connection.")
 
@@ -79,6 +79,13 @@ def complete_event(conn, slug) :
               WHERE slug = ?'''
     cur = conn.cursor()
     cur.execute(sql, (slug,))
+    conn.commit()
+
+def set_all_pending(conn) :
+    sql = ''' UPDATE events
+              SET complete = 0'''
+    cur = conn.cursor()
+    cur.execute(sql)
     conn.commit()
 
 if __name__ == "__main__" :

@@ -1,4 +1,6 @@
 config.json
+config_games.json
+fallback_data/
 *.db
 log.txt
 *.pyc
