@@ -65,7 +65,7 @@ while True :
             time.sleep(1)
 
             for tournament in tournaments:
-                if any(event["slug"] in newfound for event in tournament["events"]):
+                if all(event["slug"] in newfound for event in tournament["events"]):
                     new_tournaments.append(tournament)
             
             if slugs == [] :
