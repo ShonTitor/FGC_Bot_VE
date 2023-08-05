@@ -151,8 +151,9 @@ while True :
                                 twitter_api.statuses.update_with_media(**params)
                             else:
                                 twitter_api.statuses.update(status=result_text)
-                            time.sleep(30)
                         complete_event(conn, slug)
+                        if not debug:
+                            time.sleep(30)
                     except Exception:
                         printl(traceback.format_exc())
 
