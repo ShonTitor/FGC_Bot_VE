@@ -436,6 +436,12 @@ def sgg_data(slug) :
               if c == char[0]:
                   char = (c,s)
                   break
+              
+      if game and type(char) is tuple and char[0] not in possible_chars and len(possible_chars) > 0:
+          print("toca fuzzy con el personaje parte 2", char[0])
+          p = process.extract(char[0], possible_chars, limit=1)
+          print(f"{char[0]} => {p[0][0]}")
+          char = (p[0][0], char[1])
 
       if char is None and allow_random:
           char = ("Random", 0)
@@ -619,6 +625,7 @@ if __name__ ==  "__main__" :
     slug = "tournament/phoenix-rise/event/melee-singles"
     slug = "tournament/phoenix-rise/event/guilty-gear-strive"
     slug = "tournament/phoenix-rise/event/rivals-singles"
+    slug = "tournament/smash-league-top-network/event/1vs1-super-smash-ultimate"
 
     events = scan_sgg()
     #slug = events[0]
