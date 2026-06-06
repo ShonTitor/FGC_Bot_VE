@@ -5,3 +5,5 @@ fallback_data/
 log.txt
 *.pyc
 venv
+.claude/
+.venv/

@@ -108,7 +108,7 @@ def check_challonge(slug) :
     datos = json.loads(response.content)
     #datos["tournament"]["complete_at"]
     if "tournament" in datos :
-        return datos["tournament"]["state"] == "complete"
+        return (datos["tournament"]["state"] == "complete", 0)
     else :
         return None
 
@@ -175,6 +175,7 @@ def scan_sgg(page=1, videogameIds=videogameIds, countryCode=countryCode, modo_ar
             discriminator
           }
           events {
+            id
             slug
             videogame { id }
           }
@@ -208,12 +209,14 @@ def scan_sgg(page=1, videogameIds=videogameIds, countryCode=countryCode, modo_ar
             if t["owner"]["discriminator"] not in config.get("sgg_discriminator_banlist", [])
         ]
 
-        events = [ event["slug"] for event in
-                   filter( lambda e : e["videogame"]["id"] in videogameIds,
-                          [ e for tournament in tournaments
-                              for e in tournament["events"] ]
-                         )
-                 ]
+        events = [
+            {"id": str(e["id"]), "slug": e["slug"]}
+            for e in (
+                ev for tournament in tournaments
+                for ev in tournament["events"]
+                if ev["videogame"]["id"] in videogameIds
+            )
+        ]
 
         results = {
             "events": events,
@@ -230,6 +233,7 @@ def check_sgg(slug) :
         event(slug: $slug) {
           numEntrants
           state
+          startAt
         }
     }
     '''
@@ -239,15 +243,13 @@ def check_sgg(slug) :
         print("CHECK_SGG:", response.content)
         time.sleep(10)
     event = json.loads(response.content)["data"]["event"]
-    #print(event)
     if event is None :
-      return None
-    if event["numEntrants"] \
-       and event["numEntrants"] > 0 \
-       and event["state"] == "COMPLETED" :
-            return True
-    else :
-        return False
+        return None
+    start_at = event.get("startAt") or 0
+    complete = bool(event["numEntrants"] \
+                    and event["numEntrants"] > 0 \
+                    and event["state"] == "COMPLETED")
+    return (complete, start_at)
 
 def sgg_query(slug) :
     query = '''
@@ -570,13 +572,22 @@ def get_top8er(data):
     r = json.loads(response.content)
     return r
 
+def _char_value(char):
+    if char is None:
+        return None
+    if isinstance(char, str) and char.startswith("http"):
+        resp = requests.get(char)
+        b64 = base64.b64encode(resp.content).decode("utf-8")
+        return {"base64": b64, "name": "custom_char.png"}
+    return char
+
 def get_top8er_new(data):
     players = []
     for player in data["players"]:
         p = {
             "name": player["tag"],
             "social": player["twitter"],
-            "character": [player["char"] if player["char"] is not None else None, None, None],
+            "character": [_char_value(player["char"]), None, None],
             "flag": [None, None]
         }
         players.append(p)

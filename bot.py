@@ -4,7 +4,8 @@ import sys
 from database import *
 from apis import *
 from datetime import datetime
-import twitter
+from barkr.connections import ConnectionMode, TwitterConnection
+from barkr.models import Message
 from PIL import Image
 
 path = os.path.realpath(__file__)
@@ -17,11 +18,18 @@ debug = config.get("debug", False)
 db_file = config["db_file"] if not debug else config["debug_db_file"]
 
 # Cosas de twitter
-twitter_api = twitter.Twitter(auth=twitter.OAuth(
-                                config["twitter_access_token_key"],
-                                config["twitter_access_token_secret"],
-                                config["twitter_consumer_key"],
-                                config["twitter_consumer_secret"]))
+twitter_conn = TwitterConnection(
+    "FGC Bot VE",
+    [ConnectionMode.WRITE],
+    config["twitter_consumer_key"],
+    config["twitter_consumer_secret"],
+    config["twitter_access_token_key"],
+    config["twitter_access_token_secret"],
+    config["twitter_bearer_token"],
+)
+
+def post_tweet(text):
+    twitter_conn._post([Message(id="0", message=text)])
 
 arrecho = False
 if "--arrecho" in sys.argv:
@@ -53,13 +61,20 @@ while True :
             if sgg_data is None:
                 printl("Error in start gg query")
                 continue
-            slugs = sgg_data["events"]
+            page_events = sgg_data["events"]
             tournaments = sgg_data["tournaments"]
             newfound = []
-            for slug in slugs :
-                if not event_exists(conn, slug):
-                    insert_events(conn, [slug])
-                    newfound.append(slug)
+            for ev in page_events:
+                slug = ev["slug"]
+                sgg_id = ev["id"]
+                existing = get_event_by_sgg_id(conn, sgg_id)
+                if existing is None:
+                    if not event_exists(conn, slug):
+                        insert_events(conn, [(slug, sgg_id)])
+                        newfound.append(slug)
+                elif existing[0] != slug:
+                    printl(f"Slug changed for event {sgg_id}: {existing[0]} -> {slug}")
+                    update_event_slug(conn, sgg_id, slug)
             if len(newfound) > 0 :
                 printl("Found new events: \n"+" \n".join(newfound))
             time.sleep(1)
@@ -67,8 +82,8 @@ while True :
             for tournament in tournaments:
                 if all(event["slug"] in newfound for event in tournament["events"]):
                     new_tournaments.append(tournament)
-            
-            if slugs == [] :
+
+            if not page_events :
                 break
             page += 1
     except Exception:
@@ -88,7 +103,7 @@ while True :
             printl(announcement_text)
 
             if not debug:
-                twitter_api.statuses.update(status=announcement_text)
+                post_tweet(announcement_text)
                 time.sleep(30)
         except Exception:
             printl(traceback.format_exc())
@@ -96,16 +111,22 @@ while True :
     try:
         printl("Checking if any pending events are complete")
         pending = pending_events(conn)
+        thirty_days_ago = time.time() - 30 * 24 * 3600
         for slug in pending :
             try:
                 printl(f"Checking if {slug} is complete")
                 checked = check_event(slug)
                 time.sleep(1)
                 if checked is None :
-                    printl("Couldn't find event "+slug)
-                    #complete_event(conn, slug)
+                    printl(f"Event {slug} not found (404), removing from DB")
+                    delete_event(conn, slug)
                     continue
-                if checked :
+                is_complete, start_at = checked
+                if not is_complete and start_at > 0 and start_at < thirty_days_ago:
+                    printl(f"Event {slug} started over 30 days ago and is not complete, removing from DB")
+                    delete_event(conn, slug)
+                    continue
+                if is_complete :
                     data = event_data(slug)
                     time.sleep(1)
 
@@ -146,11 +167,7 @@ while True :
                     result_text = format_data(data)
                     try:
                         if not debug:
-                            if img:
-                                params = {"status": result_text, "media[]": img, "_base64": True}
-                                twitter_api.statuses.update_with_media(**params)
-                            else:
-                                twitter_api.statuses.update(status=result_text)
+                            post_tweet(result_text)
                         complete_event(conn, slug)
                         if not debug:
                             time.sleep(30)

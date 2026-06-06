@@ -13,7 +13,8 @@ def create_connection(db_file) :
 def create_tables(conn) :
     tablitas = [""" CREATE TABLE IF NOT EXISTS events (
                     slug text PRIMARY KEY,
-                    complete integer
+                    complete integer,
+                    sgg_id text
                 );"""]
     if conn is not None:
         for tablita in tablitas :
@@ -22,6 +23,19 @@ def create_tables(conn) :
                 c.execute(tablita)
             except Error as e:
                 print(e)
+        try:
+            conn.cursor().execute("ALTER TABLE events ADD COLUMN sgg_id TEXT")
+            conn.commit()
+        except Error:
+            pass
+        try:
+            conn.cursor().execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_events_sgg_id "
+                "ON events(sgg_id) WHERE sgg_id IS NOT NULL"
+            )
+            conn.commit()
+        except Error:
+            pass
     else:
         print("Error! cannot create the database connection.")
 
@@ -66,11 +80,26 @@ WHERE slug = ?""", (slug,))
     rows = cur.fetchall()
     return len(rows) > 0
 
-def insert_events(conn, slugs) :
-    sql = ''' INSERT INTO events (slug, complete)
-              VALUES(?,0) '''
+def get_event_by_sgg_id(conn, sgg_id) :
     cur = conn.cursor()
-    cur.executemany(sql, [(slug,) for slug in slugs])
+    cur.execute("SELECT slug, complete FROM events WHERE sgg_id = ?", (sgg_id,))
+    return cur.fetchone()
+
+def insert_events(conn, events) :
+    sql = ''' INSERT OR IGNORE INTO events (slug, sgg_id, complete)
+              VALUES(?,?,0) '''
+    cur = conn.cursor()
+    cur.executemany(sql, events)
+    conn.commit()
+
+def update_event_slug(conn, sgg_id, new_slug) :
+    cur = conn.cursor()
+    cur.execute("UPDATE events SET slug = ? WHERE sgg_id = ?", (new_slug, sgg_id))
+    conn.commit()
+
+def delete_event(conn, slug) :
+    cur = conn.cursor()
+    cur.execute("DELETE FROM events WHERE slug = ?", (slug,))
     conn.commit()
 
 def complete_event(conn, slug) :
@@ -87,9 +116,4 @@ def set_all_pending(conn) :
     cur = conn.cursor()
     cur.execute(sql)
     conn.commit()
-
-if __name__ == "__main__" :
-    conn = create_connection("molly.db")
-    insert_events(conn, ["perro", "gato"])
-    print(pending_events(conn))
-
+    
