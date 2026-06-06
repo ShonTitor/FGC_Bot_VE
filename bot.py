@@ -1,3 +1,4 @@
+import asyncio
 import time
 import traceback
 import sys
@@ -36,10 +37,16 @@ if config.get("telegram_enabled"):
         config["telegram_chat_id"],
     ))
 
-def post_tweet(text):
-    msg = [Message(id="0", message=text, source_connection="FGC Bot VE", media=[])]
+def post_tweet(text, img=None):
     for conn in _connections:
-        conn._post(msg)
+        if img is not None and isinstance(conn, TelegramConnection):
+            asyncio.run(conn.app.bot.send_photo(
+                chat_id=conn.chat_id,
+                photo=io.BytesIO(base64.b64decode(img)),
+                caption=text,
+            ))
+        else:
+            conn._post([Message(id="0", message=text, source_connection="FGC Bot VE", media=[])])
 
 arrecho = False
 if "--arrecho" in sys.argv:
@@ -156,6 +163,7 @@ while True :
                            ):
 
                         try:
+                            printl("Getting top 8 graphic from Top8er API")
                             top8er = get_top8er_new(data)
                             if top8er is None:
                                 img = None
@@ -167,6 +175,7 @@ while True :
                                 debug_img = Image.open(buffer)
                                 debug_img.save(os.path.join("debug_images", f"{slug.replace('/', '_')}.png"), optimize=True)
                         except Exception:
+                            printl(f"Error getting top 8 graphic for {slug}")
                             printl(traceback.format_exc())
                             img = None
                             
@@ -177,7 +186,7 @@ while True :
                     result_text = format_data(data)
                     try:
                         if not debug:
-                            post_tweet(result_text)
+                            post_tweet(result_text, img)
                         complete_event(conn, slug)
                         if not debug:
                             time.sleep(60)
