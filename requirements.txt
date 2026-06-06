@@ -1,4 +1,5 @@
 barkr
 pillow
+python-telegram-bot
 requests
 thefuzz

@@ -4,7 +4,7 @@ import sys
 from database import *
 from apis import *
 from datetime import datetime
-from barkr.connections import ConnectionMode, TwitterConnection
+from barkr.connections import ConnectionMode, TelegramConnection, TwitterConnection
 from barkr.models import Message
 from PIL import Image
 
@@ -17,19 +17,29 @@ debug = config.get("debug", False)
 
 db_file = config["db_file"] if not debug else config["debug_db_file"]
 
-# Cosas de twitter
-twitter_conn = TwitterConnection(
-    "FGC Bot VE",
-    [ConnectionMode.WRITE],
-    config["twitter_consumer_key"],
-    config["twitter_consumer_secret"],
-    config["twitter_access_token_key"],
-    config["twitter_access_token_secret"],
-    config["twitter_bearer_token"],
-)
+_connections = []
+if config.get("twitter_enabled"):
+    _connections.append(TwitterConnection(
+        "Twitter",
+        [ConnectionMode.WRITE],
+        config["twitter_consumer_key"],
+        config["twitter_consumer_secret"],
+        config["twitter_access_token_key"],
+        config["twitter_access_token_secret"],
+        config["twitter_bearer_token"],
+    ))
+if config.get("telegram_enabled"):
+    _connections.append(TelegramConnection(
+        "Telegram",
+        [ConnectionMode.WRITE],
+        config["telegram_token"],
+        config["telegram_chat_id"],
+    ))
 
 def post_tweet(text):
-    twitter_conn._post([Message(id="0", message=text, source_connection="FGC Bot VE", media=[])])
+    msg = [Message(id="0", message=text, source_connection="FGC Bot VE", media=[])]
+    for conn in _connections:
+        conn._post(msg)
 
 arrecho = False
 if "--arrecho" in sys.argv:
