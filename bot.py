@@ -104,7 +104,7 @@ while True :
 
             if not debug:
                 post_tweet(announcement_text)
-                time.sleep(30)
+                time.sleep(60)
         except Exception:
             printl(traceback.format_exc())
 
@@ -170,7 +170,7 @@ while True :
                             post_tweet(result_text)
                         complete_event(conn, slug)
                         if not debug:
-                            time.sleep(30)
+                            time.sleep(60)
                     except Exception:
                         printl(traceback.format_exc())
 
@@ -183,5 +183,5 @@ while True :
         printl(traceback.format_exc())
 
     printl("sleeping")
-    time.sleep(60)
+    time.sleep(300)
 
