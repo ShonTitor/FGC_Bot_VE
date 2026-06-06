@@ -6,7 +6,7 @@ from database import *
 from apis import *
 from datetime import datetime
 from barkr.connections import ConnectionMode, TelegramConnection, TwitterConnection
-from barkr.models import Message
+from barkr.models import Media, Message
 from PIL import Image
 
 path = os.path.realpath(__file__)
@@ -46,7 +46,8 @@ def post_tweet(text, img=None):
                 caption=text,
             ))
         else:
-            conn._post([Message(id="0", message=text, source_connection="FGC Bot VE", media=[])])
+            media = [Media(mime_type="image/png", content=base64.b64decode(img))] if img is not None else []
+            conn._post([Message(id="0", message=text, source_connection="FGC Bot VE", media=media)])
 
 arrecho = False
 if "--arrecho" in sys.argv:
@@ -97,7 +98,7 @@ while True :
             time.sleep(1)
 
             for tournament in tournaments:
-                if all(event["slug"] in newfound for event in tournament["events"]):
+                if tournament["events"] and all(event["slug"] in newfound for event in tournament["events"]):
                     new_tournaments.append(tournament)
 
             if not page_events :
@@ -135,13 +136,13 @@ while True :
                 checked = check_event(slug)
                 time.sleep(1)
                 if checked is None :
-                    printl(f"Event {slug} not found (404), removing from DB")
-                    delete_event(conn, slug)
+                    printl(f"Event {slug} not found on start.gg, marking as done to prevent re-announcement")
+                    complete_event(conn, slug)
                     continue
                 is_complete, start_at = checked
                 if not is_complete and start_at > 0 and start_at < thirty_days_ago:
-                    printl(f"Event {slug} started over 30 days ago and is not complete, removing from DB")
-                    delete_event(conn, slug)
+                    printl(f"Event {slug} started over 30 days ago and is not complete, marking as done")
+                    complete_event(conn, slug)
                     continue
                 if is_complete :
                     data = event_data(slug)
