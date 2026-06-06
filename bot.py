@@ -29,7 +29,7 @@ twitter_conn = TwitterConnection(
 )
 
 def post_tweet(text):
-    twitter_conn._post([Message(id="0", message=text)])
+    twitter_conn._post([Message(id="0", message=text, source_connection="FGC Bot VE")])
 
 arrecho = False
 if "--arrecho" in sys.argv:
